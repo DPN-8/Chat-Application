@@ -1,37 +1,23 @@
 import React, { useEffect, useState } from "react";
 import "./ChatInterface.css";
 
-const ChatInterface = ({session}) => {
+const ChatInterface = ({ session }) => {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
   const [chatSocket, setChatSocket] = useState(null);
   const [user1, setUser1] = useState();
   const [user2, setUser2] = useState();
-  let receiver = session.receiver
-  let sender = session.sender  
-  useEffect(() => {
-    console.log(session);
-    let receiver = session.receiver
-    let sender = session.sender
-    if (receiver && sender) {
-      if (receiver < sender) {
-        setUser1(receiver);
-        setUser2(sender);
-      } else {
-        setUser1(sender);
-        setUser2(receiver);
-      }
-    }
-  }, [receiver,sender]);
 
   useEffect(() => {
-    console.log(user1, " ", user2);
-    if (user1 && user2) {
-      //   const respose = axios.post('http://192.168.1.20:8000/')
+    setUser1(session.receiver < session.sender ? session.receiver : session.sender);
+    setUser2(session.receiver > session.sender ? session.receiver : session.sender);
+  }, [session.receiver, session.sender]);
+
+  useEffect(() => {
+    if (user1 && user2 && session.session_key) {
       const socket = new WebSocket(
-        `ws://192.168.1.20:8000/ws/chat/public_room/${user1}-${user2}/`
+        `ws://192.168.1.20:8000/ws/chat/public_room/${user1}-${user2}/?session_key=${encodeURIComponent(session.session_key)}`
       );
-      console.log(socket.url)
       socket.onopen = function (e) {
         console.log("Chat socket successfully connected.");
       };
@@ -42,14 +28,17 @@ const ChatInterface = ({session}) => {
 
       socket.onmessage = function (e) {
         const data = JSON.parse(e.data);
-        setMessages((prevMessages) => [...prevMessages, data]);
+        console.log(data);
+        if (Array.isArray(data)) {
+          data.forEach((msg) => {
+            setMessages((prevMessages) => [...prevMessages, msg]);
+          });
+        } else {
+          setMessages((prevMessages) => [...prevMessages, data]);
+        }
       };
 
       setChatSocket(socket);
-
-      return () => {
-        socket.close();
-      };
     }
   }, [user1, user2]);
 
@@ -58,16 +47,17 @@ const ChatInterface = ({session}) => {
   };
 
   const handleSendMessage = () => {
+    
     if (message.trim() !== "" && chatSocket) {
       const newMessage = {
-        sender: sender,
-        receiver: receiver,
+        sender: session.sender,
+        receiver: session.receiver,
         message: message.trim(),
         timestamp: new Date().toISOString(),
+        session_key: session.session_key,
       };
       chatSocket.send(JSON.stringify(newMessage));
       setMessage("");
-      //   setMessages(prevMessages => [...prevMessages, newMessage]);
     }
   };
 
@@ -103,11 +93,14 @@ const ChatInterface = ({session}) => {
               <div
                 key={index}
                 className={`message ${
-                  msg.sender === sender ? "sent" : "received"
+                  msg.sender === session.sender ? "sent" : "received"
                 }`}
               >
-                <span>{msg.sender}: </span>
-                <span>{msg.message}</span>
+                <span
+                  className={`${msg.sender === session.sender ? "text-right" : "text-left"}`}
+                >
+                  {msg.message}
+                </span>
               </div>
             ))}
           </div>

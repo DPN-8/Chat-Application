@@ -17,7 +17,8 @@ class Message(models.Model):
         'UNREAD' : 0
     }
     session = models.ForeignKey(Session, on_delete = models.CASCADE)
-    sender = models.ForeignKey(User, on_delete = models.CASCADE)
+    sender = models.ForeignKey(User, on_delete = models.CASCADE, related_name = 'sender')
+    receiver = models.ForeignKey(User, on_delete = models.CASCADE, related_name = 'receiver')
     encrypted_content = models.TextField()
     status = models.CharField(statusenum, default = statusenum['UNREAD'])
     time_stamp = models.DateTimeField(auto_now_add = True)

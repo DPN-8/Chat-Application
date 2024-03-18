@@ -27,5 +27,8 @@ def response(method, status, message, obj = None):
     
     if(status == 'user_not_found'):
         return JsonResponse(response_data, status=404)
+    
+    if(status == 'conflict'):
+        return JsonResponse(response_data, status=409)
 
     return JsonResponse(response_data)

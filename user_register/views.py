@@ -11,10 +11,16 @@ class UserViews(View):
         request_body = get_request_body(request)
         username = request_body['username']
         mobile_number = int(request_body['mobile_number'])
-        if username and mobile_number:
+        private_key = request_body['private_key']
+        public_key = request_body['public_key']
+        if username and mobile_number and public_key and private_key:
+            if User.objects.filter(username = username).exists():
+                return response(request.method, 'conflict', 'user with the username ' + username + ' already exist')
             user = {
                 'username' : username,
-                'mobile_number' : mobile_number
+                'mobile_number' : mobile_number,
+                'private_key' : private_key,
+                'public_key' : public_key
             }
             try :
                 user_obj = User(**user)
